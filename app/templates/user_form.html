@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% import 'macros/user_form_macro.html' as macros %}
+
+
+{% block content %}
+
+<h1 class="mb-4">{{ title }}</h1>
+{{ macros.user_form(form_action, roles, data, hide_login_password, field_errors, current_user) }}
+
+
+{% endblock %}
