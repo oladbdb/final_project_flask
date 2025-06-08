@@ -1,18 +1,21 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from models import db, User, Role
+from models import db, User, Role, Equipment, Category, Photo, ServiceHistory, ResponsiblePerson
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 import pytz
 import os
 from validators import validate_user_form
 from permission import check_rights
+from equipment_bp import equipment_bp
+
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(base_dir, 'instance', 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.register_blueprint(equipment_bp)
 
 # Инициализация Flask-Login и БД
 login_manager = LoginManager()
@@ -28,8 +31,8 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    users = User.query.all()
-    return render_template('index.html', users=users)
+    equipment = Equipment.query.all()
+    return render_template('index.html', equipment=equipment)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -63,13 +66,17 @@ def init_db():
     if not Role.query.first():
         admin = Role(
             name='Admin', 
-            description='Роль администратора'
+            description='Роль администратора. Полный доступ (добавление, редактирование, удаление)'
         )
-        default_role = Role(
-            name='Default',
-            description='Роль обычного пользователя'
+        tech = Role(
+            name='Technician',
+            description='Роль технического специалиста. Просмотр, добавление записей об обслуживании.'
         )
-        db.session.add_all([admin, default_role])
+        default = Role(
+            name='Default_User',
+            description='Роль обычного пользователя. Только просмотр.'
+        )
+        db.session.add_all([admin, tech, default])
         db.session.commit()
 
     if not User.query.first():
