@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4">Информация об оборудовании</h1>
+
+<table class="table table-bordered w-50">
+    <tr>
+        <th>ID</th>
+        <td>{{ equipment.id }}</td>
+    </tr>
+    <tr>
+        <th>Название</th>
+        <td>{{ equipment.name }}</td>
+    </tr>
+    <tr>
+        <th>Инвентарный номер</th>
+        <td>{{ equipment.inventory_number }}</td>
+    </tr>
+    <tr>
+        <th>Категория</th>
+        <td>{{ equipment.category.name }}</td>
+    </tr>
+    <tr>
+        <th>Дата покупки</th>
+        <td>{{ equipment.purchase_date.strftime('%d.%m.%Y') if equipment.purchase_date else '—' }}</td>
+    </tr>
+    <tr>
+        <th>Стоимость</th>
+        <td>{{ equipment.cost }} руб.</td>
+    </tr>
+    <tr>
+        <th>Статус</th>
+        <td>{{ equipment.status }}</td>
+    </tr>
+    <tr>
+        <th>Ответственные лица</th>
+        <td>
+            {% for person in equipment.responsible_persons %}
+                {{ person.full_name }} ({{ person.position }}){% if not loop.last %}, {% endif %}
+            {% else %}
+                — 
+            {% endfor %}
+        </td>
+    </tr>
+</table>
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
+{% endblock %}

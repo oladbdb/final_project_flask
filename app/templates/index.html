@@ -49,6 +49,7 @@
                     <th>Название</th>
                     <th>Инвентарный номер</th>
                     <th>Категория</th>
+                    <th>Дата покупки</th>
                     <th>Статус</th>
                     <th>Действия</th>
                 </tr>
@@ -60,6 +61,7 @@
                         <td>{{ eq.name }}</td>
                         <td>{{ eq.inventory_number }}</td>
                         <td>{{ eq.category.name }}</td>
+                        <td>{{ eq.purchase_date.strftime('%d.%m.%Y') if eq.purchase_date else '—' }}</td>
                         <td>
                             {% if eq.status == 'В эксплуатации' %} В эксплуатации
                             {% elif eq.status == 'На ремонте' %} На ремонте
@@ -70,7 +72,6 @@
                         <td>
                             {% if current_user.is_authenticated %}
                                 {% if current_user.role.name == 'Admin' %}
-                                    <a href="{{ url_for('equipment.create_equipment') }}" class="btn btn-primary mt-4">Создать оборудование</a>
                                     <a href="{{ url_for('equipment.edit_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-warning">Редактировать</a>
                                     <button type="button"
                                         class="btn btn-sm btn-danger"
@@ -125,7 +126,11 @@
                     <li class="page-item disabled"><span class="page-link">Следующая</span></li>
                 {% endif %}
             </ul>
-        </nav>     
+        </nav>    
+        
+        {% if current_user.is_authenticated and current_user.role.name == 'Admin' %}
+            <a href="{{ url_for('equipment.create_equipment') }}" class="btn btn-primary mt-4">Создать оборудование</a>
+        {% endif %}
 
     </div>
 </div>
@@ -149,5 +154,24 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const equipmentName = button.getAttribute('data-equipment-name');
+            const actionUrl = button.getAttribute('data-url');
+
+            const modalText = deleteModal.querySelector('#equipmentNameToDelete');
+            const form = deleteModal.querySelector('#deleteForm');
+
+            modalText.textContent = equipmentName;
+            form.action = actionUrl;
+        });
+    }
+});
+</script>
 
 {% endblock %}

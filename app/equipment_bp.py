@@ -35,7 +35,6 @@ def edit_equipment(equipment_id):
         equipment.purchase_date = datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None
         equipment.cost = request.form.get('cost') or None
         equipment.status = request.form.get('status')
-        equipment.note = request.form.get('note')
 
         responsible_ids = request.form.getlist('responsible_persons')
         equipment.responsible_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(responsible_ids)).all()
@@ -55,7 +54,6 @@ def edit_equipment(equipment_id):
         'purchase_date': equipment.purchase_date.strftime('%Y-%m-%d') if equipment.purchase_date else '',
         'cost': str(equipment.cost) if equipment.cost else '',
         'status': equipment.status,
-        'note': equipment.note,
         'responsible_persons': [str(p.id) for p in equipment.responsible_persons]
     }
 
@@ -77,13 +75,13 @@ def delete_equipment(equipment_id):
         db.session.rollback()
         flash('Ошибка при удалении оборудования.', 'danger')
 
-    return redirect(url_for('equipment.equipment_list'))
+    return redirect(url_for('index'))
 
 
 @equipment_bp.route('/create', methods=['GET', 'POST'])
 @login_required
 @check_rights('create_equipment')
-def create_user():
+def create_equipment():
     categories = Category.query.all()
     responsible_persons = ResponsiblePerson.query.all()
 
@@ -94,7 +92,6 @@ def create_user():
         purchase_date = request.form.get('purchase_date') or None
         cost = request.form.get('cost')
         status = request.form.get('status')
-        note = request.form.get('note')
 
         responsible_ids = request.form.getlist('responsible_persons')
 
@@ -104,8 +101,7 @@ def create_user():
             category_id=category_id,
             purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None,
             cost=cost,
-            status=status,
-            note=note
+            status=status
         )
 
         new_equipment.responsible_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(responsible_ids)).all()
@@ -139,7 +135,7 @@ def create_user():
             db.session.add(new_equipment)
             db.session.commit()
             flash('Оборудование успешно добавлено!', 'success')
-            return redirect(url_for('equipment.equipment_list'))
+            return redirect(url_for('index'))
         except Exception as e:
             db.session.rollback()
             flash('Ошибка при сохранении оборудования.', 'danger')

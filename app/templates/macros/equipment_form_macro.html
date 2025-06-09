@@ -1,0 +1,73 @@
+{% macro equipment_form(form_action, categories, responsible_persons, data={}, field_errors={}) %}
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="name" class="form-label">Название *</label>
+        <input 
+            type="text" 
+            class="form-control" 
+            id="name" 
+            name="name" 
+            value="{{ data.name or '' }}" 
+            required
+        >
+    </div>
+
+    <div class="mb-3">
+        <label for="inventory_number" class="form-label">Инвентарный номер *</label>
+        <input 
+            type="text" 
+            class="form-control" 
+            id="inventory_number" 
+            name="inventory_number" 
+            value="{{ data.inventory_number or '' }}" 
+            required
+        >
+    </div>
+
+    <div class="mb-3">
+        <label for="category_id" class="form-label">Категория *</label>
+        <select name="category_id" id="category_id" class="form-select" required>
+            {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if data.category_id == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="purchase_date" class="form-label">Дата покупки</label>
+        <input type="date" name="purchase_date" id="purchase_date" class="form-control" value="{{ data.purchase_date or '' }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="cost" class="form-label">Стоимость</label>
+        <input type="number" step="0.01" name="cost" id="cost" class="form-control" value="{{ data.cost or '' }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="status" class="form-label">Статус</label>
+        <select name="status" id="status" class="form-select">
+            <option value="В эксплуатации" {% if data.status == 'В эксплуатации' %}selected{% endif %}>В эксплуатации</option>
+            <option value="На ремонте" {% if data.status == 'На ремонте' %}selected{% endif %}>На ремонте</option>
+            <option value="Списано" {% if data.status == 'Списано' %}selected{% endif %}>Списано</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="responsible_persons" class="form-label">Ответственные лица</label>
+        <select multiple name="responsible_persons" id="responsible_persons" class="form-select">
+            {% for person in responsible_persons %}
+                <option value="{{ person.id }}" {% if person.id|string in data.responsible_persons %}selected{% endif %}>{{ person.full_name }} ({{ person.position }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="photo" class="form-label">Фото</label>
+        <input type="file" name="photo" id="photo" class="form-control">
+    </div>
+
+    <button type="submit" class="btn btn-success">Сохранить</button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endmacro %}

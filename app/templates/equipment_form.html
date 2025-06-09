@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% import 'macros/equipment_form_macro.html' as macros %}
+
+
+{% block content %}
+
+<h1 class="mb-4">{{ title }}</h1>
+{{ macros.equipment_form(form_action, categories, responsible_persons, data, field_errors) }}
+
+
+{% endblock %}
