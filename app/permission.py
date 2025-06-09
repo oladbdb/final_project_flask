@@ -4,17 +4,18 @@ from flask_login import current_user
 
 ROLE_PERMISSIONS = {
     "Admin": {
-        "create_user",
-        "edit_user",
-        "view_user",
-        "delete_user",
-        "view_logs",
-        "view_stats"
+        "create_equipment",
+        "edit_equipment",
+        "view_equipment",
+        "delete_equipment",
+        "create_service" 
+    },
+    "Technician": {
+        "view_equipment",
+        "create_service" 
     },
     "Default": {
-        "edit_self",
-        "view_self",
-        "view_logs"
+        "view_equipment"
     }
 }
 

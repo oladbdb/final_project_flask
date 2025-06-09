@@ -3,39 +3,87 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <h1 class="my-5">Список пользователей</h1>
+        <h1 class="my-5">Список оборудования</h1>
+
+        <!-- Фильтры -->
+        <form method="GET" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label for="category" class="form-label">Категория</label>
+                <select name="category" id="category" class="form-select">
+                    <option value="">Все категории</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.args.get('category', '') == (cat.id|string) %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="status" class="form-label">Статус</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">Все статусы</option>
+                    <option value="В эксплуатации" {% if request.args.get('status') == 'In_use' %}selected{% endif %}>В эксплуатации</option>
+                    <option value="На ремонте" {% if request.args.get('status') == 'Under_maintenance' %}selected{% endif %}>На ремонте</option>
+                    <option value="Списано" {% if request.args.get('status') == 'Written_off' %}selected{% endif %}>Списано</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">Дата покупки (от)</label>
+                <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}">
+            </div>
+
+            <div class="col-md-3">
+                <label for="date_to" class="form-label">Дата покупки (до)</label>
+                <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
+            </div>
+
+            <div class="col-md-12 mt-3">
+                <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Сбросить</a>
+            </div>
+        </form>
         
         <table class="table table-bordered table-striped align-middle">
             <thead class="table-dark">
                 <tr>
-                    <th>№</th>
-                    <th>ФИО</th>
-                    <th>Роль</th>
+                    <th>Название</th>
+                    <th>Инвентарный номер</th>
+                    <th>Категория</th>
+                    <th>Статус</th>
                     <th>Действия</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for user in users %}
+                {% for eq in equipment.items %}
                     <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ user.last_name or '' }} {{ user.first_name }} {{ user.patronymic or '' }}</td>
-                        <td>{{ user.role.name if user.role else '—' }}</td>
+                        <td>{{ eq.name }}</td>
+                        <td>{{ eq.inventory_number }}</td>
+                        <td>{{ eq.category.name }}</td>
                         <td>
-                            {% if current_user.is_authenticated and current_user.role.name == 'Admin' %}
-                                <a href="{{ url_for('view_user', user_id=user.id) }}" class="btn btn-sm btn-info">Просмотр</a>
-                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Редактировать</a>
-                                <button type="button"
-                                    class="btn btn-sm btn-danger"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#deleteModal"
-                                    data-user-name="{{ user.last_name or '' }} {{ user.first_name }} {{ user.patronymic or '' }}"
-                                    data-url="{{ url_for('delete_user', user_id=user.id) }}">
-                                    Удалить
-                                </button>
-                                {% elif current_user.id == user.id %}
-                                    <a href="{{ url_for('view_user', user_id=user.id) }}" class="btn btn-sm btn-info">Просмотр</a>
-                                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Редактировать</a>                        
+                            {% if eq.status == 'В эксплуатации' %} В эксплуатации
+                            {% elif eq.status == 'На ремонте' %} На ремонте
+                            {% elif eq.status == 'Списано' %} Списано
+                            {% else %} —
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if current_user.is_authenticated %}
+                                {% if current_user.role.name == 'Admin' %}
+                                    <a href="{{ url_for('equipment.create_equipment') }}" class="btn btn-primary mt-4">Создать оборудование</a>
+                                    <a href="{{ url_for('equipment.edit_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-warning">Редактировать</a>
+                                    <button type="button"
+                                        class="btn btn-sm btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal"
+                                        data-equipment-name="{{ eq.name }}"
+                                        data-url="{{ url_for('equipment.delete_equipment', equipment_id=eq.id) }}">
+                                        Удалить
+                                    </button>
+                                {% elif current_user.role.name == 'Technician' %}
+                                    <a href="{{ url_for('equipment.add_service_record', equipment_id=eq.id) }}" class="btn btn-sm btn-info">Добавить запись об обслуживании</a>
+                                {% endif %}
+                                <a href="{{ url_for('equipment.view_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-info">Просмотр</a>                      
                             {% endif %}
                         </td>
                     </tr>
@@ -43,9 +91,41 @@
             </tbody>
         </table>
         
-        {% if current_user.is_authenticated and current_user.role.name == 'Admin' %}
-            <a href="{{ url_for('create_user') }}" class="btn btn-primary">Создать пользователя</a>
-        {% endif %}         
+        <!-- Пагинация -->
+        {% set args = request.args.copy() %}
+        {% set _ = args.pop('page', None) %}
+
+        <nav>
+            <ul class="pagination">
+                {% if equipment.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=equipment.prev_num, **args) }}">Предыдущая</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
+                {% endif %}
+
+                {% for p in equipment.iter_pages() %}
+                    {% if p %}
+                        {% if p == equipment.page %}
+                            <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('index', page=p, **args) }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if equipment.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('index', page=equipment.next_num, **args) }}">Следующая</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Следующая</span></li>
+                {% endif %}
+            </ul>
+        </nav>     
 
     </div>
 </div>
@@ -59,7 +139,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                    Вы уверены, что хотите удалить пользователя <strong id="userNameToDelete"></strong>?
+                    Вы уверены, что хотите удалить оборудование <strong id="equipmentNameToDelete"></strong>?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>

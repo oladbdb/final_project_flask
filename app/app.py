@@ -31,8 +31,27 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    equipment = Equipment.query.all()
-    return render_template('index.html', equipment=equipment)
+    page = request.args.get('page', 1, type=int)
+    category_id = request.args.get('category')
+    status = request.args.get('status')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    query = Equipment.query
+
+    if category_id:
+        query = query.filter(Equipment.category_id == category_id)
+    if status:
+        query = query.filter(Equipment.status == status)
+    if date_from:
+        query = query.filter(Equipment.purchase_date >= date_from)
+    if date_to:
+        query = query.filter(Equipment.purchase_date <= date_to)
+
+    equipment = query.order_by(Equipment.purchase_date.desc()).paginate(page=page, per_page=10)
+    categories = Category.query.all()
+
+    return render_template('index.html', equipment=equipment, categories=categories)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -90,130 +109,78 @@ def init_db():
             )
         db.session.add(default_user)
         db.session.commit()
-
-
-
-@app.route('/user/<int:user_id>')
-@login_required
-def view_user(user_id):
-    if current_user.role and current_user.role.name == "Admin":
-        permission = "view_user"
-    elif current_user.id == user_id:
-        permission = "view_self"
-    else:
-        flash("У вас недостаточно прав для доступа к данной странице.", "warning")
-        return redirect(url_for("index"))
-
-    @check_rights(permission)
-    def proceed():
-        user = User.query.get_or_404(user_id)
-        return render_template('view_user.html', user=user)
     
-    return proceed()
-
-@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def edit_user(user_id):
-    if current_user.role and (current_user.role.name == "Admin" or current_user.id == user_id):
-        permission = "edit_user" if current_user.role.name == "Admin" else "edit_self"
-    else:
-        flash("У вас недостаточно прав для доступа к данной странице.", "warning")
-        return redirect(url_for("index"))
-
-    @check_rights(permission)
-    def proceed():
-        user = User.query.get_or_404(user_id)
-        roles = Role.query.all()
-
-        if request.method == 'POST':
-            form_data = request.form.to_dict()
-            form_data['role_id'] = request.form.get('role_id') or ''
-
-            errors = validate_user_form(form_data, check_password=False)
-            
-            if errors:
-                return render_template('user_form.html', title='Редактирование пользователя', form_action=url_for('edit_user', user_id=user.id), roles=roles, data=form_data, hide_login_password=True, field_errors=errors)
-
-            user.first_name = form_data['first_name']
-            user.last_name = form_data['last_name'] or None
-            user.patronymic = form_data['patronymic'] or None
-            user.role_id = int(form_data['role_id']) if form_data['role_id'] else None
-
-            try:
-                db.session.commit()
-                flash("Данные пользователя обновлены", "success")
-                return redirect(url_for('index'))
-            except:
-                db.session.rollback()
-                flash("Ошибка при обновлении", "danger")
-
-        data = {
-            'last_name': user.last_name,
-            'first_name': user.first_name,
-            'patronymic': user.patronymic,
-            'role_id': str(user.role_id) if user.role_id else ''
-        }
-
-        return render_template('user_form.html', title='Редактирование пользователя', form_action='edit_user', roles=roles, data=data, hide_login_password=True, field_errors={})
-    return proceed()
-
-
-@app.route('/delete_user/<int:user_id>', methods=['POST'])
-@login_required
-@check_rights('delete_user')
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-
-    try:
-        db.session.delete(user)
+    # Категории
+    if not Category.query.first():
+        categories = [
+            Category(name='Принтеры', description='Лазерные и струйные принтеры'),
+            Category(name='Сканеры', description='Сканеры документов'),
+            Category(name='Компьютеры', description='Настольные ПК и ноутбуки'),
+            Category(name='Мониторы', description='Мониторы'),
+            Category(name='Сетевое оборудование', description='Маршрутизаторы, коммутаторы'),
+        ]
+        db.session.add_all(categories)
         db.session.commit()
-        flash(f"Пользователь {user.last_name or ''} {user.first_name} удалён", "success")
-    except:
-        db.session.rollback()
-        flash("Ошибка при удалении пользователя", "danger")
 
-    return redirect(url_for('index'))
+    # Ответственные лица
+    if not ResponsiblePerson.query.first():
+        persons = [
+            ResponsiblePerson(full_name='Иванов Иван Иванович', position='Системный администратор', contact_info='ivanov@example.com'),
+            ResponsiblePerson(full_name='Петров Петр Петрович', position='Техник', contact_info='petrov@example.com'),
+            ResponsiblePerson(full_name='Сидорова Анна Сергеевна', position='Менеджер', contact_info='sidorova@example.com'),
+        ]
+        db.session.add_all(persons)
+        db.session.commit()
 
+    # Оборудование
+    if not Equipment.query.first():
+        categories = {c.name: c for c in Category.query.all()}
+        persons = ResponsiblePerson.query.all()
 
-@app.route('/create_user', methods=['GET', 'POST'])
-@login_required
-@check_rights('create_user')
-def create_user():
-    roles = Role.query.all()
+        e1 = Equipment(name='Принтер HP LaserJet P1102', inventory_number='INV-1001', category_id=categories['Принтеры'].id, purchase_date=datetime(2021, 5, 12), cost=12000.00, status='В эксплуатации')
+        e1.responsible_persons = [persons[0]]
+        e2 = Equipment(name='Сканер Canon CanoScan LiDE 300', inventory_number='INV-1002', category_id=categories['Сканеры'].id, purchase_date=datetime(2022, 3, 20), cost=8500.00, status='В эксплуатации')
+        e2.responsible_persons = [persons[2]]
+        e3 = Equipment(name='Ноутбук Lenovo ThinkPad E15', inventory_number='INV-1003', category_id=categories['Компьютеры'].id, purchase_date=datetime(2023, 1, 15), cost=75000.00, status='В эксплуатации')
+        e3.responsible_persons = [persons[0], persons[1]]
+        e4 = Equipment(name='Монитор Samsung S24F354FHI', inventory_number='INV-1004', category_id=categories['Мониторы'].id, purchase_date=datetime(2020, 9, 10), cost=10500.00, status='На ремонте')
+        e4.responsible_persons = [persons[1]]
+        e5 = Equipment(name='Маршрутизатор MikroTik hAP', inventory_number='INV-1005', category_id=categories['Сетевое оборудование'].id, purchase_date=datetime(2019, 7, 5), cost=6500.00, status='Списано')
+        e5.responsible_persons = [persons[0]]
+        e6 = Equipment(name='Компьютер Dell OptiPlex 3080', inventory_number='INV-1006', category_id=categories['Компьютеры'].id, purchase_date=datetime(2022, 2, 10), cost=56000.00, status='В эксплуатации')
+        e6.responsible_persons = [persons[2]]
+        e7 = Equipment( name='Монитор LG 27MK400H-B', inventory_number='INV-1007', category_id=categories['Мониторы'].id, purchase_date=datetime(2021, 8, 22), cost=14500.00, status='В эксплуатации')
+        e7.responsible_persons = [persons[2]]
+        e8 = Equipment(name='Принтер Brother HL-1223WR', inventory_number='INV-1008', category_id=categories['Принтеры'].id, purchase_date=datetime(2022, 12, 2), cost=9700.00, status='В эксплуатации')
+        e8.responsible_persons = [persons[1]]
+        e9 = Equipment(name='Ноутбук HP ProBook 450 G8', inventory_number='INV-1009', category_id=categories['Компьютеры'].id, purchase_date=datetime(2023, 4, 1), cost=82000.00, status='В эксплуатации')
+        e9.responsible_persons = [persons[0]]
+        e10 = Equipment(name='Сканер Epson Perfection V39', inventory_number='INV-1010', category_id=categories['Сканеры'].id, purchase_date=datetime(2020, 6, 17), cost=11000.00, status='В эксплуатации')
+        e10.responsible_persons = [persons[2]]
+        e11 = Equipment(name='Маршрутизатор TP-Link Archer AX10', inventory_number='INV-1011', category_id=categories['Сетевое оборудование'].id, purchase_date=datetime(2021, 11, 10), cost=9500.00, status='В эксплуатации')
+        e11.responsible_persons = [persons[0]]
+        e12 = Equipment(name='Монитор ASUS VG249Q', inventory_number='INV-1012', category_id=categories['Мониторы'].id, purchase_date=datetime(2022, 5, 18), cost=23000.00, status='В эксплуатации')
+        e12.responsible_persons = [persons[2]]
+        e13 = Equipment(name='Сервер Dell PowerEdge T40', inventory_number='INV-1013', category_id=categories['Компьютеры'].id, purchase_date=datetime(2021, 8, 25), cost=125000.00, status='В эксплуатации')
+        e13.responsible_persons = [persons[0], persons[1]]
+        e14 = Equipment( name='Принтер Xerox Phaser 3020BI', inventory_number='INV-1014', category_id=categories['Принтеры'].id, purchase_date=datetime(2023, 2, 14), cost=11500.00, status='В эксплуатации')
+        e14.responsible_persons = [persons[1]]
+        e15 = Equipment(name='Сканер Brother ADS-1200', inventory_number='INV-1015', category_id=categories['Сканеры'].id, purchase_date=datetime(2020, 9, 30), cost=17800.00, status='В эксплуатации')
+        e15.responsible_persons = [persons[2]]
 
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        last_name = request.form.get('last_name') or None
-        first_name = request.form.get('first_name')
-        patronymic = request.form.get('patronymic') or None
-        role_id = request.form.get('role_id') or None
+        db.session.add_all([e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15])
+        db.session.commit()
 
-        errors = validate_user_form(request.form, check_password=True)
-
-        if errors:
-            return render_template('user_form.html', title='Создание пользователя', form_action='create_user', roles=roles, data=request.form, field_errors=errors)
-
-        new_user = User(
-            username=username,
-            password=generate_password_hash(password),
-            last_name=last_name,
-            first_name=first_name,
-            patronymic=patronymic,
-            role_id=int(role_id) if role_id else None
-        )
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Пользователь успешно создан!', 'success')
-            return redirect(url_for('index'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Ошибка при сохранении в базу данных.', 'danger')
-            return render_template('user_form.html', title='Создание пользователя', form_action='create_user', roles=roles, data=request.form, field_errors={})
-
-    return render_template('user_form.html', title='Создание пользователя', form_action='create_user', roles=roles, data={}, field_errors={})
-
+    # История обслуживания
+    if not ServiceHistory.query.first():
+        e1 = Equipment.query.filter_by(inventory_number='INV-1001').first()
+        e3 = Equipment.query.filter_by(inventory_number='INV-1003').first()
+        e4 = Equipment.query.filter_by(inventory_number='INV-1004').first()
+        s1 = ServiceHistory(equipment_id=e1.id, date=datetime(2023, 7, 15), service_type='Замена картриджа', comment='Установлен новый оригинальный картридж')
+        s2 = ServiceHistory(equipment_id=e3.id, date=datetime(2024, 1, 10), service_type='Профилактическая чистка', comment='Очистка системы охлаждения')
+        s3 = ServiceHistory( equipment_id=e4.id, date=datetime(2024, 3, 5), service_type='Диагностика', comment='Диагностирована проблема с подсветкой, требуется замена блока питания')
+        db.session.add_all([s1, s2, s3])
+        db.session.commit()
 
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
