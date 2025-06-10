@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1 class="mb-4">Журнал обслуживания оборудования</h1>
+
+<table class="table table-bordered table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>Оборудование</th>
+      <th>Инвентарный номер</th>
+      <th>Дата</th>
+      <th>Тип обслуживания</th>
+      <th>Комментарий</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for record in services %}
+      <tr>
+        <td>{{ record.equipment.name }}</td>
+        <td>{{ record.equipment.inventory_number }}</td>
+        <td>{{ record.date.strftime('%d.%m.%Y') }}</td>
+        <td>{{ record.service_type }}</td>
+        <td>{{ record.comment or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="text-center">Записей об обслуживании пока нет.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('service.add_service', return_to='service.service_list') }}" class="btn btn-success mb-3">Добавить запись об обслуживании</a>
+
+
+{% endblock %}

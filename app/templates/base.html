@@ -21,7 +21,7 @@
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-          <a class="navbar-brand" href="{{ url_for('index') }}">Лабораторная работа № 5</a>
+          <a class="navbar-brand" href="{{ url_for('index') }}">Учёт офисного оборудования</a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -31,9 +31,11 @@
                 <a class="nav-link" aria-current="page" href="{{ url_for('index') }}">Главная</a>
               </li>
               {% if current_user.is_authenticated %}
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('change_password') }}">Изменить пароль</a>
-                </li>
+                {% if current_user.role.name == 'Technician' or current_user.role.name == 'Admin' %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('service.service_list') }}">Обслуживание</a>
+                  </li>
+                {% endif %}
                 <li class="nav-item">
                   <a class="nav-link" aria-current="page" href="{{ url_for('logout') }}">Выйти</a>
                 </li>

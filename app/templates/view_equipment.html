@@ -44,5 +44,32 @@
     </tr>
 </table>
 
+{% if current_user.role.name in ['Admin', 'Technician'] %}
+    <h3 class="mt-5">История обслуживания</h3>
+
+    {% if service_history %}
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Тип обслуживания</th>
+                    <th>Комментарий</th>
+                    <th>Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in service_history %}
+                    <tr>
+                        <td>{{ record.service_type }}</td>
+                        <td>{{ record.comment or '—' }}</td>
+                        <td>{{ record.date.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-muted">Нет записей об обслуживании.</p>
+    {% endif %}
+{% endif %}
+
 <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад</a>
 {% endblock %}

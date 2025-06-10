@@ -71,6 +71,7 @@
                         </td>
                         <td>
                             {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('equipment.view_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-info">Просмотр</a>                     
                                 {% if current_user.role.name == 'Admin' %}
                                     <a href="{{ url_for('equipment.edit_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-warning">Редактировать</a>
                                     <button type="button"
@@ -82,9 +83,8 @@
                                         Удалить
                                     </button>
                                 {% elif current_user.role.name == 'Technician' %}
-                                    <a href="{{ url_for('equipment.add_service_record', equipment_id=eq.id) }}" class="btn btn-sm btn-info">Добавить запись об обслуживании</a>
-                                {% endif %}
-                                <a href="{{ url_for('equipment.view_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-info">Просмотр</a>                      
+                                    <a href="{{ url_for('service.add_service', equipment_id=eq.id, return_to='index') }}" class="btn btn-sm btn-warning">Обслуживание</a>
+                                {% endif %} 
                             {% endif %}
                         </td>
                     </tr>

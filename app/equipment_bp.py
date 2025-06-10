@@ -18,7 +18,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @check_rights('view_equipment')
 def view_equipment(equipment_id):
     equipment = Equipment.query.get_or_404(equipment_id)
-    return render_template('view_equipment.html', equipment=equipment)
+    service_history = []
+    if current_user.role.name in ['Admin', 'Technician']:
+        service_history = ServiceHistory.query.filter_by(equipment_id=equipment.id).order_by(ServiceHistory.date.desc()).all()
+    
+    return render_template('view_equipment.html', equipment=equipment, service_history=service_history)
 
 @equipment_bp.route('/<int:equipment_id>/edit', methods=['GET', 'POST'])
 @login_required

@@ -5,9 +5,8 @@ from werkzeug.security import generate_password_hash
 from datetime import datetime
 import pytz
 import os
-from validators import validate_user_form
-from permission import check_rights
 from equipment_bp import equipment_bp
+from service_bp import service_bp
 
 
 app = Flask(__name__)
@@ -16,6 +15,7 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(base_dir, 'instance', 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.register_blueprint(equipment_bp)
+app.register_blueprint(service_bp)
 
 # Инициализация Flask-Login и БД
 login_manager = LoginManager()
@@ -107,7 +107,23 @@ def init_db():
             patronymic='Отчество',
             role_id = 1
             )
-        db.session.add(default_user)
+        tech_user = User(
+            username='tech', 
+            password=generate_password_hash('qwerty'),
+            first_name='Имя',
+            last_name='Фамилия',
+            patronymic='Отчество',
+            role_id = 2
+            )
+        user = User(
+            username='test_user', 
+            password=generate_password_hash('qwerty'),
+            first_name='Имя',
+            last_name='Фамилия',
+            patronymic='Отчество',
+            role_id = 3
+            )
+        db.session.add_all([default_user, tech_user, user])
         db.session.commit()
     
     # Категории
@@ -182,36 +198,6 @@ def init_db():
         db.session.add_all([s1, s2, s3])
         db.session.commit()
 
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    field_errors = {}
-
-    if request.method == 'POST':
-        old_password = request.form.get('old_password', '')
-        new_password = request.form.get('new_password', '')
-        repeat_password = request.form.get('repeat_password', '')
-
-        if not current_user.check_password(old_password):
-            field_errors['old_password'] = "Старый пароль введён неверно."
-
-        password_errors = validate_user_form({'password': new_password}, check_password=True)
-        if 'password' in password_errors:
-            field_errors['new_password'] = password_errors['password']
-
-        if new_password != repeat_password:
-            field_errors['repeat_password'] = "Пароли не совпадают."
-
-        if field_errors:
-            return render_template('change_password.html', field_errors=field_errors, data=request.form)
-
-
-        current_user.password = generate_password_hash(new_password)
-        db.session.commit()
-        flash("Пароль успешно изменён", "success")
-        return redirect(url_for('index'))
-
-    return render_template('change_password.html', field_errors={}, data={})
 
 if __name__ == '__main__':
     app.run(debug=True)
