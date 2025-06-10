@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, session, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from models import db, User, Role, Equipment, Category, Photo, ServiceHistory, ResponsiblePerson
+from models import db, User, Role, Equipment, Category, ServiceHistory, ResponsiblePerson
 from werkzeug.security import generate_password_hash
-from datetime import datetime
-import pytz
+from datetime import datetime, timedelta, date
 import os
 from equipment_bp import equipment_bp
 from service_bp import service_bp
@@ -201,6 +200,26 @@ def init_db():
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(os.path.join(base_dir, 'uploads'), filename)
+
+@app.before_request
+def check_notifications_once_per_week():
+    if not current_user.is_authenticated:
+        return
+    
+    if request.endpoint == 'service.calendar':
+        return
+
+    current_week = date.today().isocalendar()[1]
+    if session.get('notification_week') == current_week:
+        return  # уже показано в этом цикле
+
+    today = datetime.today().date()
+    soon = today + timedelta(days=7)
+    upcoming = ServiceHistory.query.filter(ServiceHistory.planned == True, ServiceHistory.date.between(today, soon)).all()
+
+    if upcoming:
+        flash(f'У вас есть {len(upcoming)} плановых работ на этой неделе!', 'info')
+        session['notification_week'] = current_week
 
 if __name__ == '__main__':
     app.run(debug=True)

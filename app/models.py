@@ -65,6 +65,7 @@ class ServiceHistory(db.Model):
     date = db.Column(db.Date, nullable=False)
     service_type = db.Column(db.String(100), nullable=False)
     comment = db.Column(db.Text)
+    planned = db.Column(db.Boolean, default=False)
 
 class ResponsiblePerson(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -8,11 +8,13 @@ ROLE_PERMISSIONS = {
         "edit_equipment",
         "view_equipment",
         "delete_equipment",
-        "create_service" 
+        "create_service",
+        "view_service" 
     },
     "Technician": {
         "view_equipment",
-        "create_service" 
+        "create_service",
+        "view_service"
     },
     "Default": {
         "view_equipment"

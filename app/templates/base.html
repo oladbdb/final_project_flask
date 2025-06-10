@@ -35,6 +35,9 @@
                   <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('service.service_list') }}">Обслуживание</a>
                   </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('service.calendar') }}">Календарь ТО</a>
+                  </li>
                 {% endif %}
                 <li class="nav-item">
                   <a class="nav-link" aria-current="page" href="{{ url_for('logout') }}">Выйти</a>
@@ -53,7 +56,10 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <p class="alert alert-{{ category }}">{{ message }}</li>
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+          </div>
         {% endfor %}
       {% endif %}
     {% endwith %}

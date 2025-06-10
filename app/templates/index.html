@@ -21,9 +21,9 @@
                 <label for="status" class="form-label">Статус</label>
                 <select name="status" id="status" class="form-select">
                     <option value="">Все статусы</option>
-                    <option value="В эксплуатации" {% if request.args.get('status') == 'In_use' %}selected{% endif %}>В эксплуатации</option>
-                    <option value="На ремонте" {% if request.args.get('status') == 'Under_maintenance' %}selected{% endif %}>На ремонте</option>
-                    <option value="Списано" {% if request.args.get('status') == 'Written_off' %}selected{% endif %}>Списано</option>
+                    <option value="В эксплуатации" {% if request.args.get('status') == 'В эксплуатации' %}selected{% endif %}>В эксплуатации</option>
+                    <option value="На ремонте" {% if request.args.get('status') == 'На ремонте' %}selected{% endif %}>На ремонте</option>
+                    <option value="Списано" {% if request.args.get('status') == 'Списано' %}selected{% endif %}>Списано</option>
                 </select>
             </div>
 

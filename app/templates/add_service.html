@@ -36,6 +36,13 @@
         <textarea id="comment" name="comment" class="form-control" rows="3"></textarea>
     </div>
 
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" value="1" id="planned" name="planned">
+        <label class="form-check-label" for="planned">
+            Запланированное обслуживание
+        </label>
+    </div>
+
     <button type="submit" class="btn btn-primary">Сохранить</button>
     <a href="{{ url_for(return_to) }}" class="btn btn-secondary">Отмена</a>
 </form>

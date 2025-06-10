@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_login import login_required
 from models import db, Equipment, ServiceHistory
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from permission import check_rights
 
 service_bp = Blueprint('service', __name__, url_prefix='/service')
@@ -27,12 +27,14 @@ def add_service(equipment_id=None):
         date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
         service_type = request.form['service_type']
         comment = request.form.get('comment')
+        planned = bool(request.form.get('planned'))
 
         new_record = ServiceHistory(
             equipment_id=eq_id,
             date=date,
             service_type=service_type,
-            comment=comment
+            comment=comment,
+            planned=planned
         )
         db.session.add(new_record)
         db.session.commit()
@@ -46,3 +48,39 @@ def add_service(equipment_id=None):
         selected_equipment=selected_equipment,
         return_to=return_to
     )
+
+@service_bp.route('/calendar')
+@login_required
+@check_rights('view_service')
+def calendar():
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+
+    upcoming = ServiceHistory.query.filter(
+        ServiceHistory.date >= week_start,
+        ServiceHistory.date <= week_end
+    ).all()
+
+    # Показываем flash только если не показывали в этом ISO-неделе
+    current_week = today.isocalendar()[1]
+    if session.get('notification_week') != current_week:
+        if upcoming:
+            flash(f'У вас есть {len(upcoming)} плановых работ на этой неделе!', 'info')
+        session['notification_week'] = current_week
+
+    return render_template('calendar.html')
+
+
+@service_bp.route('/calendar/data')
+@login_required
+@check_rights('view_service')
+def calendar_data():
+    records = ServiceHistory.query.all()
+    events = []
+    for r in records:
+        events.append({
+            "title": f"{r.service_type} — {r.equipment.name}",
+            "start": r.date.strftime('%Y-%m-%d')
+        })
+    return jsonify(events)
