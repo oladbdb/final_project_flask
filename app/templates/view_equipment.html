@@ -42,7 +42,20 @@
             {% endfor %}
         </td>
     </tr>
+    <tr>
+        <th>Примечание</th>
+        <td>{{ equipment.comment or '—' }}</td>
+    </tr>
 </table>
+
+{% if equipment.photo %}
+    <h3 class="mt-4">Фотография оборудования</h3>
+    <div class="mb-4">
+        <img src="{{ url_for('uploaded_file', filename=equipment.photo.file_name) }}" 
+            alt="Фото оборудования" 
+            class="img-thumbnail">
+    </div>
+{% endif %}
 
 {% if current_user.role.name in ['Admin', 'Technician'] %}
     <h3 class="mt-5">История обслуживания</h3>

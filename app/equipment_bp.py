@@ -4,6 +4,7 @@ from permission import check_rights
 from models import db, User, Equipment, Category, Photo, ResponsiblePerson, ServiceHistory
 from sqlalchemy import func
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import hashlib
 import os
 
@@ -31,6 +32,7 @@ def edit_equipment(equipment_id):
     equipment = Equipment.query.get_or_404(equipment_id)
     categories = Category.query.all()
     responsible_persons = ResponsiblePerson.query.all()
+
     if request.method == 'POST':
         equipment.name = request.form.get('name')
         equipment.inventory_number = request.form.get('inventory_number')
@@ -39,9 +41,43 @@ def edit_equipment(equipment_id):
         equipment.purchase_date = datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None
         equipment.cost = request.form.get('cost') or None
         equipment.status = request.form.get('status')
+        equipment.comment = request.form.get('comment')
 
         responsible_ids = request.form.getlist('responsible_persons')
         equipment.responsible_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(responsible_ids)).all()
+
+        photo_file = request.files.get('photo')
+        if photo_file and photo_file.filename:
+            file_data = photo_file.read()
+            md5_hash = hashlib.md5(file_data).hexdigest()
+            # Проверка на уже существующее изображение
+            existing_photo = Photo.query.filter_by(md5_hash=md5_hash).first()
+            
+            if not existing_photo:
+                if equipment.photo:
+                    try:
+                        os.remove(os.path.join(UPLOAD_FOLDER, equipment.photo.file_name))
+                    except FileNotFoundError:
+                        pass
+                    db.session.delete(equipment.photo)
+
+                photo = Photo(file_name='TEMP', mime_type=photo_file.mimetype, md5_hash=md5_hash)
+                photo.equipment = equipment
+                db.session.add(photo)
+                db.session.flush() 
+
+                ext = photo_file.mimetype.split('/')[-1] 
+                filename = f"{photo.id}.{ext}"  
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+
+                # Обновим имя файла в записи
+                photo.file_name = filename
+                equipment.photo = photo
+            else:
+                equipment.photo = existing_photo
 
         try:
             db.session.commit()
@@ -58,6 +94,7 @@ def edit_equipment(equipment_id):
         'purchase_date': equipment.purchase_date.strftime('%Y-%m-%d') if equipment.purchase_date else '',
         'cost': str(equipment.cost) if equipment.cost else '',
         'status': equipment.status,
+        'comment': equipment.comment or '',
         'responsible_persons': [str(p.id) for p in equipment.responsible_persons]
     }
 
@@ -96,7 +133,7 @@ def create_equipment():
         purchase_date = request.form.get('purchase_date') or None
         cost = request.form.get('cost')
         status = request.form.get('status')
-
+        comment = request.form.get('comment')
         responsible_ids = request.form.getlist('responsible_persons')
 
         new_equipment = Equipment(
@@ -105,7 +142,8 @@ def create_equipment():
             category_id=category_id,
             purchase_date=datetime.strptime(purchase_date, '%Y-%m-%d') if purchase_date else None,
             cost=cost,
-            status=status
+            status=status,
+            comment=comment
         )
 
         new_equipment.responsible_persons = ResponsiblePerson.query.filter(ResponsiblePerson.id.in_(responsible_ids)).all()
@@ -117,23 +155,25 @@ def create_equipment():
             md5_hash = hashlib.md5(file_data).hexdigest()
 
             existing_photo = Photo.query.filter_by(md5_hash=md5_hash).first()
-
+            
             if not existing_photo:
-                # Сохраняем файл
-                filename = photo_file.filename
+                photo = Photo(file_name='TEMP', mime_type=photo_file.mimetype, md5_hash=md5_hash)
+                photo.equipment = new_equipment
+                db.session.add(photo)
+                db.session.flush() 
+
+                ext = photo_file.mimetype.split('/')[-1] 
+                filename = f"{photo.id}.{ext}"   
                 file_path = os.path.join(UPLOAD_FOLDER, filename)
+
                 with open(file_path, 'wb') as f:
                     f.write(file_data)
 
-                photo = Photo(
-                    file_name=filename,
-                    mime_type=photo_file.mimetype,
-                    md5_hash=md5_hash
-                )
-                new_equipment.photos.append(photo)
+                # Обновим имя файла в записи
+                photo.file_name = filename
+                new_equipment.photo = photo
             else:
-                # Используем существующее фото
-                new_equipment.photos.append(existing_photo)
+                new_equipment.photo = existing_photo
 
         try:
             db.session.add(new_equipment)

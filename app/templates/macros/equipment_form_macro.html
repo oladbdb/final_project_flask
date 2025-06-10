@@ -63,8 +63,13 @@
     </div>
 
     <div class="mb-3">
-        <label for="photo" class="form-label">Фото</label>
-        <input type="file" name="photo" id="photo" class="form-control">
+        <label for="photo" class="form-label">Фото <small class="text-muted">(только одно изображение)</small></label>
+        <input type="file" name="photo" id="photo" class="form-control" accept="image/*">
+    </div>
+
+    <div class="mb-3">
+        <label for="comment" class="form-label">Примечание</label>
+        <textarea name="comment" id="comment" class="form-control" rows="3">{{ data.comment or '' }}</textarea>
     </div>
 
     <button type="submit" class="btn btn-success">Сохранить</button>

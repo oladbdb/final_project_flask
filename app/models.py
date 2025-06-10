@@ -38,10 +38,11 @@ class Equipment(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     purchase_date = db.Column(db.Date, nullable=False)
     cost = db.Column(db.Numeric(10, 2), nullable=False)
-    status = db.Column(db.Enum('В эксплуатации', 'На ремонте', 'Списано'), nullable=False, default='In_use')
+    status = db.Column(db.Enum('В эксплуатации', 'На ремонте', 'Списано'), nullable=False, default='В эксплуатации')
+    comment = db.Column(db.Text)
 
     category = db.relationship('Category', backref='equipments')
-    photos = db.relationship('Photo', backref='equipment', cascade='all, delete-orphan')
+    photo = db.relationship("Photo", back_populates="equipment", uselist=False, cascade='all, delete-orphan')
     service_records = db.relationship('ServiceHistory', backref='equipment', cascade='all, delete-orphan')
     responsible_persons = db.relationship('ResponsiblePerson', secondary=equipment_responsible, back_populates='equipments')
 
@@ -50,7 +51,8 @@ class Photo(db.Model):
     file_name = db.Column(db.String(255), nullable=False)
     mime_type = db.Column(db.String(100), nullable=False)
     md5_hash = db.Column(db.String(32), nullable=False)
-    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=False)
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), nullable=False, unique=True)
+    equipment = db.relationship("Equipment", back_populates="photo")
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)

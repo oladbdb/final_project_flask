@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, Role, Equipment, Category, Photo, ServiceHistory, ResponsiblePerson
 from werkzeug.security import generate_password_hash
@@ -198,6 +198,9 @@ def init_db():
         db.session.add_all([s1, s2, s3])
         db.session.commit()
 
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(os.path.join(base_dir, 'uploads'), filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

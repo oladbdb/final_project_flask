@@ -4,40 +4,40 @@
 <h1 class="mb-4">Добавление записи об обслуживании</h1>
 
 <form method="POST">
-  {% if not selected_equipment %}
-  <div class="mb-3">
-    <label for="equipment_id" class="form-label">Оборудование</label>
-    <select name="equipment_id" id="equipment_id" class="form-select" required>
-      {% for eq in equipments %}
-        <option value="{{ eq.id }}">{{ eq.name }} — {{ eq.inventory_number }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  {% else %}
-  <div class="mb-3">
-    <label class="form-label">Оборудование</label>
-    <input type="text" class="form-control" value="{{ selected_equipment.name }} — {{ selected_equipment.inventory_number }}" disabled>
-    <input type="hidden" name="equipment_id" value="{{ selected_equipment.id }}">
-  </div>
-  {% endif %}
+    {% if not selected_equipment %}
+        <div class="mb-3">
+            <label for="equipment_id" class="form-label">Оборудование</label>
+            <select name="equipment_id" id="equipment_id" class="form-select" required>
+                {% for eq in equipments %}
+                    <option value="{{ eq.id }}">{{ eq.name }} — {{ eq.inventory_number }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% else %}
+        <div class="mb-3">
+            <label class="form-label">Оборудование</label>
+            <input type="text" class="form-control" value="{{ selected_equipment.name }} — {{ selected_equipment.inventory_number }}" disabled>
+            <input type="hidden" name="equipment_id" value="{{ selected_equipment.id }}">
+        </div>
+    {% endif %}
 
-  <div class="mb-3">
-    <label for="date" class="form-label">Дата</label>
-    <input type="date" id="date" name="date" class="form-control">
-  </div>
+    <div class="mb-3">
+        <label for="date" class="form-label">Дата</label>
+        <input type="date" id="date" name="date" class="form-control">
+    </div>
 
-  <div class="mb-3">
-    <label for="service_type" class="form-label">Тип обслуживания</label>
-    <input type="text" id="service_type" name="service_type" class="form-control" required>
-  </div>
+    <div class="mb-3">
+        <label for="service_type" class="form-label">Тип обслуживания</label>
+        <input type="text" id="service_type" name="service_type" class="form-control" required>
+    </div>
 
-  <div class="mb-3">
-    <label for="comment" class="form-label">Комментарий</label>
-    <textarea id="comment" name="comment" class="form-control" rows="3"></textarea>
-  </div>
+    <div class="mb-3">
+        <label for="comment" class="form-label">Комментарий</label>
+        <textarea id="comment" name="comment" class="form-control" rows="3"></textarea>
+    </div>
 
-  <button type="submit" class="btn btn-primary">Сохранить</button>
-  <a href="{{ url_for(return_to) }}" class="btn btn-secondary">Отмена</a>
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a href="{{ url_for(return_to) }}" class="btn btn-secondary">Отмена</a>
 </form>
 
 {% endblock %}
